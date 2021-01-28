@@ -26,32 +26,20 @@ app.get('/', getMyDetails);
 app.post('/validate-rule', validate, validateRule);
 
 function errorHandler(err, req, res, next) {
-  const { rule, data } = req.body
   if (res.headersSent) {
     return next(err)
   }
 
   if (err.status) {
-    const failedValidation = err.message.includes('failed validation')
-    const fieldValue = checkObjKeyLength(rule, data)
-   const responseData = { 
-     'validation' : {
-      'error': true,
-      'field': rule.field,
-      'field_value': fieldValue,
-      'condition': rule.condition,
-      'condition_value': rule.condition_value
-    } 
-  }
     return res.status(err.status).json({
       message: err.message,
       status: 'error',
-      data: failedValidation ? responseData : null
+      data: err.data
       });
   }
-
-  res.status(500).json({
-    message: 'Internal server error',
+  console.log(err)
+    res.status(500).json({
+    message: err.message,
     status: 'error',
     data: null
   })

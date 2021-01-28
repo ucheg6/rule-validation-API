@@ -1,24 +1,40 @@
 
-const makeBadRequestError = (message) => {
+makeBadRequestError = (message, data) => {
   const error = new Error(message)
   error.status = 400
+  error.data = data
   return error
 }
 
-exports.validate = (req, res, next) => {
+validate = (req, res, next) => {
     const { body } = req
     parseRequired(body, res)
-
     const { data, rule } = body
-    const dataValue = extractDataValue(data, rule.field)
+    let dataValue
+    if(isNaN(rule)) {
+      dataValue = extractDataValue(data, rule.field)
+    } else {
+      throw makeBadRequestError('rule should be an object.')
+    }
     if (!dataValue) {
       throw makeBadRequestError(`field ${rule.field} is missing from data.`)
     }
     const operatorHandler = operators[rule.condition]
+    if(!operatorHandler) throw makeBadRequestError('Accepted condition values are: eq, neq, gte, gt and contains.', null)
     if (!operatorHandler(dataValue, rule)) {
-      throw makeBadRequestError(`field ${rule.field} failed validation.`)
+      const msg ={
+        'data': {
+          'validation': {
+            'error': false,
+            'field': rule.field,
+            'field_value': dataValue,
+            'condition': rule.condition,
+            'condition_value': rule.condition_value
+          }
+        }
+      }
+      throw makeBadRequestError(`field ${rule.field} failed validation.`, msg)
     }
-
     next()
 }
 
@@ -93,7 +109,7 @@ const parseContainsDataValue = (dataValue) => {
 const extractDataValue = (data, field) => {
   const keys = field.split('.')
   if (keys.length > 2) {
-    const error = new Error('Nesting should not be more than 2 levels')
+    const error = new Error('Nesting should not be more than 2 levels.')
     error.status = 400
     throw error
   }
@@ -102,7 +118,7 @@ const extractDataValue = (data, field) => {
   return keys.length > 1 ? result[keys[1]] : result
 }
 
-exports.checkObjKeyLength = (rule, data) => {
+const checkObjKeyLength = (rule, data) => {
   const keys = rule.field.split('.')
     let value
     if (keys.length > 1) {
@@ -113,3 +129,4 @@ exports.checkObjKeyLength = (rule, data) => {
     }
     return value
 }
+module.exports = { checkObjKeyLength, validate }

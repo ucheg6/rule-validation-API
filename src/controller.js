@@ -14,7 +14,7 @@ const validateRule = (req, res) => {
     const fieldValue = checkObjKeyLength(rule, data)
     return res.status(201).json({
       message: `field ${rule.field} successfully validated.`,
-      status: 'succes',
+      status: 'success',
       'data': {
         'validation': {
           'error': false,
